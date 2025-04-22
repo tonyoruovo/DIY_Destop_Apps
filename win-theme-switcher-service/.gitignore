@@ -1,0 +1,129 @@
+# General .NET Core ignores
+**/[Bb]in/
+**/[Oo]bj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/*.suo
+**/*.userprefs
+**/*.userosscache
+**/packages/
+**/TestResults/
+**/artifacts/
+**/Publish/
+*.swp
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# NuGet Packages
+*.nupkg
+**/packages/
+**/NuGet.Config
+
+# Local development files
+.env
+.env.local
+.env.*.local
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Rider
+.idea/
+*.sln.iml
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# Local File Storage
+*.sql
+*.sqlite
+*.db
+
+# Code coverage
+coverage.*
+*.coverage
+*.coveragexml
+
+# Build Server
+_ReSharper.*
+*.dotCover
+
+# VS Cache files
+.vs/
+
+# Azure Functions
+**/local.settings.json
+
+# User-specific files
+*.rsuser
+*.userprefs
+
+# MacOS
+.DS_Store
+
+# Linux
+*~
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Backup files
+*.bak
+*.tmp
+*.temp
+
+# JetBrains Rider
+*.sln.iml
+
+# Performance logs
+*.diag
+*.diagsession
+
+# Local development cache
+.cache/
+
+# Visual Studio Code
+!.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Local History (Visual Studio)
+.history/
+
+# Build output
+**/wwwroot/dist/
+**/wwwroot/lib/
+**/wwwroot/css/
+**/wwwroot/js/
+*.exe
+*.dll
+*.pdb
+*.xml
+
+# Roslyn cache
+*.cache
+
+# VS Code - Update
+.vscode/settings.json
