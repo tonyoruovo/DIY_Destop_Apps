@@ -78,6 +78,19 @@ static class Utils
         }
     }
     /// <summary>
+    /// Remove a registry entry
+    /// </summary>
+    /// <param name="writableKey"></param>
+    /// <param name="valueName"></param>
+    public static void RemoveRegistryValue(RegistryKey writableKey, string valueName)
+    {
+        if(writableKey.GetValue(valueName) != null)
+        {
+            writableKey.DeleteValue(valueName);
+            writableKey.DeleteSubKey(valueName);
+        }
+    }
+    /// <summary>
     /// Calls <c>Registry.CurrentUser.OpenSubKey</c> with <c>writable</c> set to <c>true</c>
     /// </summary>
     /// <param name="name">The name of windows identifier for this key</param>

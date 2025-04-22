@@ -51,14 +51,16 @@ namespace WinThemeSwitcherService
         {
             _logger = logger;
             var args = Environment.GetCommandLineArgs();
+            _logger.LogInformation($"Arguments: {PrettyPrint(args)}");
             if(args == null)
             {
                 _logger.LogCritical("Something went wrong. You might need to restart your computer. Use --help to see usage hints");
                 Environment.Exit(0);
             }
-            else if(args.Length == 1)
+            args = args[1..];
+            if(args.Length == 1)
             {
-                _logger.LogWarning(new EventId(int.MinValue, $"WARN-{Utils.ID}"), "A single argument was found. This will be consumed as a file path to the args needed");
+                _logger.LogWarning(new EventId(int.MinValue, $"WARN-{Utils.ID}"), $"A single argument ({args[0]}) was found. This will be consumed as a file path to the args needed");
                 if(!TryLoadSettingsFile(args[0], out settings, _logger))
                 {
                     ThrowFormatEx();
@@ -67,6 +69,7 @@ namespace WinThemeSwitcherService
             }
             else if(args.Length == 2)
             {
+                _logger.LogInformation($"2 Arguments {args[0]} and {args[1]} were found");
                 if(!TimeSpan.TryParse(args[0], out var start) || !TimeSpan.TryParse(args[1], out var end))
                 {
                     ThrowFormatEx();
@@ -85,6 +88,10 @@ namespace WinThemeSwitcherService
                     return;
                 }
             }
+        }
+        private static string PrettyPrint(string[] array)
+        {
+            return JsonSerializer.Serialize<string[]>(array);
         }
         /// <summary>
         /// Executes the background service logic to periodically check the current time and switch
