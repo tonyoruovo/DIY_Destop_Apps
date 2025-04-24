@@ -4,6 +4,9 @@ using System.Reflection;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+// using System.Configuration.Install;
+
 using WinThemeSwitcherService;
 /// <summary>
 /// The entry point for the Windows Theme Switcher Service application.
@@ -19,11 +22,10 @@ class Program
     /// The name of the global mutex used to ensure that only one instance of the application runs at a time.
     /// </summary>
     private const string MUTEX_NAME = "Global\\ThemeSwitcherMutex";
-/// <summary>
-/// The registry key path used to add the application to Windows Startup.
-/// </summary>
+    /// <summary>
+    /// The registry key path used to add the application to Windows Startup.
+    /// </summary>
     private const string REG_WIN_STARTUP_KEY_PATH = @"Software\Microsoft\Windows\CurrentVersion\Run";
-
     static void Main(string[] args)
     {
         if(args.Length > 0 && (args[0].Equals("--help", StringComparison.OrdinalIgnoreCase) || args[0].Equals("-h", StringComparison.OrdinalIgnoreCase)))
@@ -34,7 +36,8 @@ class Program
         using var mutex = new Mutex(true, MUTEX_NAME, out bool createdNew);
         if (!createdNew)
         {
-            Console.WriteLine("Another instance is already running");
+            Console.WriteLine("Another instance is already running!\n\nPress any key to exit");
+            Console.Read();
             return;
         }
 
@@ -46,28 +49,82 @@ class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"Error: {ex.Message}\n\nPress any key to exit");
+            Console.Read();
         }
 
 
     }
-/// <summary>
-/// Configures and creates the host builder for the application.
-/// </summary>
-/// <param name="args">The command-line arguments passed to the application.</param>
-/// <returns>An <see cref="IHostBuilder"/> configured with the application's services.</returns>
-    static IHostBuilder CreateHostBuilder(string[] args) => Host.CreateDefaultBuilder(args).ConfigureServices(services => services.AddHostedService<Worker>());
-    
-/// <summary>
-/// Ensures that the application is added to Windows Startup by creating or updating the necessary registry entry.
-/// </summary>
-/// <param name="exePath">The file path to the application's executable.</param>
-    private static void EnsureAddedToStartup(string exePath)
+    /// <summary>
+    /// Configures and creates the host builder for the application.
+    /// </summary>
+    /// <param name="args">The command-line arguments passed to the application.</param>
+    /// <returns>An <see cref="IHostBuilder"/> configured with the application's services.</returns>
+    static IHostBuilder CreateHostBuilder(string[] args)
     {
+        return Host.CreateDefaultBuilder(args)
+            .UseWindowsService()
+            .ConfigureLogging((hostContext, logging) =>
+            {
+                // Clear default providers if needed
+                logging.ClearProviders();
+
+                // Add built-in providers
+                logging.AddConsole();
+                logging.AddDebug();
+                logging.AddEventLog(settings =>
+                {
+                    settings.SourceName = Utils.ID;
+                    settings.LogName = "Application";
+                });
+            })
+            .ConfigureServices((hostContext, services) => services.AddHostedService<Worker>());
+    }
+    /// <summary>
+    /// Ensures that the application is added to Windows Startup by creating or updating the necessary registry entry.
+    /// </summary>
+    /// <param name="exePath">The file path to the application's executable.</param>
+    private static void EnsureAddedToStartup(string exePath/*, string[] args*/)
+    {
+        /*var services = ServiceController.GetServices();
+        if(services != null && services.Length > 0)
+        {
+            var service = Array.Find(services, s => s.ServiceName.Equals(Utils.ID));
+            if(service == null)
+            {
+                // Add this service to windows services
+                if (Environment.UserInteractive)
+                {
+
+                    if (args.Length > 0)
+                    {
+                        switch (args[0])
+                        {
+                            case "-install":
+                                {
+                                    ManagedInstallerClasss.InstallHelper(new string[] { Assembly.GetExecutingAssembly().Location });
+                                    break;
+                                }
+                            case "-uninstall":
+                                {
+                                    ManagedInstallerClass.InstallHelper(new string[] { "/u", Assembly.GetExecutingAssembly().Location });
+                                    break;
+                                }
+                        }
+                    }
+                }
+                else
+                {
+                    ServiceBase[] ServicesToRun;
+                    ServicesToRun = new ServiceBase[] { new MyService() };
+                    ServiceBase.Run(ServicesToRun);
+                }
+            }
+        }*/
         try
         {
             using var key = Utils.GetWritableRegistryKey(REG_WIN_STARTUP_KEY_PATH);
-            Utils.SetRegistryValueIfNull(key, "Windows-Theme-Switcher-Service:Startup", exePath);
+            Utils.SetRegistryValueIfNull(key, exePath, exePath);
             if(key == null) {
                 var dir = Directory.CreateDirectory(Utils.BASE_DIR);
                 dir.Create();
@@ -75,21 +132,22 @@ class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Could not add/read {exePath} to startup. See below");
-            Console.Error.WriteLine(ex.ToString());
+            Utils.fileLogger.LogSync($"Could not add/read {exePath} to startup. See below", LogLevel.Error);
+            Utils.fileLogger.LogSync(ex, LogLevel.Error);
+            Console.Read();
         }
     }
-/// <summary>
-/// Displays help information about the application's usage, options, and modes.
-/// </summary>
+    /// <summary>
+    /// Displays help information about the application's usage, options, and modes.
+    /// </summary>
     static void ShowHelp()
     {
         Console.WriteLine(@"
         Windows-Theme-Switcher-Service Help
 
         Usage:
-        theme-service.exe [start-time] [end-time]
-        theme-service.exe [settings-file-path]
+        WinThemeSwitcherService.exe [start-time] [end-time]
+        WinThemeSwitcherService.exe [settings-file-path]
 
         Description:
         This background service automatically switches Windows light/dark mode based on the specified times or settings.
@@ -101,14 +159,14 @@ class Program
         1. Two arguments (Start and End time):
             Pass two time strings or date-time strings.
             Example:
-            theme-service.exe ""20:00"" ""07:00""
-            theme-service.exe ""2025-04-22 20:00"" ""2025-04-23 07:00""
+            WinThemeSwitcherService.exe ""20:00"" ""07:00""
+            WinThemeSwitcherService.exe ""2025-04-22 20:00"" ""2025-04-23 07:00""
 
         2. Single argument (Settings file path):
             Pass a path to a settings file containing the times.
             This file may be in XML, JSON or plaintext format
             Example:
-            theme-service.exe ""C:\path\to\settings.txt""
+            WinThemeSwitcherService.exe ""C:\path\to\settings.txt""
             
             Format of settings file:
 

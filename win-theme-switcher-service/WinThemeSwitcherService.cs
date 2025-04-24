@@ -51,28 +51,31 @@ namespace WinThemeSwitcherService
         {
             _logger = logger;
             var args = Environment.GetCommandLineArgs();
-            _logger.LogInformation($"Arguments: {PrettyPrint(args)}");
+            Utils.fileLogger.LogSync($"Arguments: {PrettyPrint(args)}", LogLevel.Error);
             if(args == null)
             {
-                _logger.LogCritical("Something went wrong. You might need to restart your computer. Use --help to see usage hints");
+                Utils.fileLogger.LogSync("Something went wrong. You might need to restart your computer. Use --help to see usage hints", LogLevel.Critical);
+                Console.Read();
                 Environment.Exit(0);
             }
             args = args[1..];
             if(args.Length == 1)
             {
-                _logger.LogWarning(new EventId(int.MinValue, $"WARN-{Utils.ID}"), $"A single argument ({args[0]}) was found. This will be consumed as a file path to the args needed");
+                Utils.fileLogger.LogSync($"A single argument ({args[0]}) was found. This will be consumed as a file path to the args needed", LogLevel.Warning);
                 if(!TryLoadSettingsFile(args[0], out settings, _logger))
                 {
                     ThrowFormatEx();
+                    Console.Read();
                     return;
                 }
             }
             else if(args.Length == 2)
             {
-                _logger.LogInformation($"2 Arguments {args[0]} and {args[1]} were found");
+                Utils.fileLogger.LogSync($"2 Arguments {args[0]} and {args[1]} were found", LogLevel.Error);
                 if(!TimeSpan.TryParse(args[0], out var start) || !TimeSpan.TryParse(args[1], out var end))
                 {
                     ThrowFormatEx();
+                    Console.Read();
                     return;
                 }
                 settings = new LocalSettings {
@@ -84,7 +87,10 @@ namespace WinThemeSwitcherService
             {
                 if(!TryLoadSettingsFile($"{Utils.BASE_DIR}\\{SETTINGS_FILE_NAME}", out settings, _logger))
                 {
-                    ThrowFormatEx();
+                    settings = new LocalSettings {
+                        start = TimeSpan.ParseExact("18:30", "g", new CultureInfo("en-US")),
+                        end = TimeSpan.ParseExact("6:30", "g", new CultureInfo("en-US")),
+                    };
                     return;
                 }
             }
@@ -137,7 +143,7 @@ namespace WinThemeSwitcherService
         {
             if(File.Exists(path))
             {
-                _logger.LogError("File does not exist");
+                Utils.fileLogger.LogSync("File does not exist", LogLevel.Error);
                 settings = new LocalSettings();
                 return false;
             }
@@ -148,25 +154,25 @@ namespace WinThemeSwitcherService
             }
             catch (Exception e0)
             {
-                _logger.LogWarning(new EventId(int.MinValue, $"WARN-{Utils.ID}"), e0, "File is not in JSON format. Switching to XML parsing ...");
+                Utils.fileLogger.LogSync($"File is not in JSON format. Switching to XML parsing ...\n{e0}", LogLevel.Warning);
                 try
                 {
                     settings = ParseXML(path);
                     return true;
                 }
-                catch
+                catch(Exception e1)
                 {
-                    _logger.LogWarning(new EventId(int.MinValue, $"WARN-{Utils.ID}"), e0, "File is not in XML format. Switching to plain text parsing ...");
+                    Utils.fileLogger.LogSync($"File is not in XML format. Switching to plain text parsing ...\n{e1}", LogLevel.Warning);
                     try
                     {
                         settings = ParsePlainText(path);
                         return true;
                     }
-                    catch (Exception e)
+                    catch (Exception e2)
                     {
                         settings = new LocalSettings();
-                        Console.Error.WriteLine("No arguments provided and settings file is missing/invalid");
-                        Console.Error.WriteLine(e);
+                        Utils.fileLogger.LogSync("No arguments provided and settings file is missing/invalid", LogLevel.Error);
+                        Utils.fileLogger.LogSync(e2, LogLevel.Error);
                         return false;
                     }
                 }
@@ -215,8 +221,8 @@ namespace WinThemeSwitcherService
         /// <param name="settings">The <see cref="LocalSettings"/> object containing the schedule to be saved.</param>
         private static void SaveSettings(LocalSettings settings)
         {
-                string json = JsonSerializer.Serialize(settings);
-                File.WriteAllText(SETTINGS_FILE_NAME, json);
+            string json = JsonSerializer.Serialize(settings);
+            File.WriteAllText($"{Utils.BASE_DIR}\\{SETTINGS_FILE_NAME}", json);
         }
         /// <summary>
         /// Throws a <see cref="FormatException"/> with a detailed error message indicating invalid time format in arguments.
@@ -247,6 +253,37 @@ namespace WinThemeSwitcherService
         /// The end time for the dark mode period.
         /// </summary>
         public TimeSpan end;
+    }
+    public class LocalFileLogger
+    {
+        private readonly FileStream console;
+        public LocalFileLogger(string path)
+        {
+            if(!File.Exists(path))
+            {
+                console = File.Create(path);
+            }
+            else
+            {
+                console = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            }
+        }
+        public async Task LogAsync(object data, LogLevel level = LogLevel.Information)
+        {
+            var logLevel = level.ToString().ToUpperInvariant();
+            var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{logLevel}] {data ?? "null"}\n";
+            await console.WriteAsync(Encoding.UTF8.GetBytes(logMessage));
+        }
+        public void LogSync(object data, LogLevel level = LogLevel.Information)
+        {
+            var logLevel = level.ToString().ToUpperInvariant();
+            var logMessage = $"[{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}] [{logLevel}] {data!}\n";
+            console.Write(Encoding.UTF8.GetBytes(logMessage));
+        }
+        ~LocalFileLogger()
+        {
+            console.Close();
+        }
     }
 }
 

@@ -1,0 +1,31 @@
+{
+    // make sure *.csproj is treated as XML
+    "files.associations": {
+      "*.csproj": "xml"
+    },
+  
+    // (Red Hat) XML language-server: map this namespace to the schema
+    "xml.fileAssociations": [
+      {
+        "pattern": "*.csproj",
+        "systemId": "http://schemas.microsoft.com/developer/msbuild/2003"
+      }
+    ],
+  
+    // actually tell it where the XSD lives
+    "xml.schemas": [
+      {
+        "fileMatch": ["*.csproj"],
+        "url": "https://raw.githubusercontent.com/dotnet/msbuild/v17.7.0/src/MSBuild/Microsoft.Build.xsd"
+      }
+    ],
+
+    "xmlComplete.schemaMapping": [
+    {
+      "xmlns": "http://schemas.microsoft.com/developer/msbuild/2003",
+      "xsdUri": "https://raw.githubusercontent.com/dotnet/msbuild/v17.7.0/src/MSBuild/Microsoft.Build.xsd",
+      "strict": false
+    }
+  ]
+  }
+  

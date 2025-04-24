@@ -19,8 +19,8 @@ The **Windows Theme Switcher Service** is a background application that automati
    - Pass two time strings or date-time strings.
    - Example:
      ```bash
-     theme-service.exe "20:00" "07:00"
-     theme-service.exe "2025-04-22 20:00" "2025-04-23 07:00"
+     WinThemeSwitcherService.exe "20:00" "07:00"
+     WinThemeSwitcherService.exe "2025-04-22 20:00" "2025-04-23 07:00"
      ```
 
 2. **Single Argument (Settings File Path):**
@@ -28,7 +28,7 @@ The **Windows Theme Switcher Service** is a background application that automati
    - Supported formats: JSON, XML, or plain text.
    - Example:
      ```bash
-     theme-service.exe "C:\path\to\settings.txt"
+     WinThemeSwitcherService.exe "C:\path\to\settings.txt"
      ```
 
 ### Settings File Format
@@ -54,7 +54,7 @@ The **Windows Theme Switcher Service** is a background application that automati
 Help Option
 To display help information:
 ```bash
-theme-service.exe --help
+WinThemeSwitcherService.exe --help
 ```
 Notes
 - Times can be in `HH:mm` or `yyyy-MM-dd HH:mm` format.
